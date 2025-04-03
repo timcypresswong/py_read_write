@@ -169,7 +169,14 @@ class pattern_blocks:
 			for line in self.info_dictionary[key]:
 				print(line)
 
-	def query_last(self, title):
+	'''
+	def print_all_info(self):
+		for key in self.info_dictionary.keys():
+			print("title:", key)
+			for line in self.info_dictionary[key]:
+				print(line)
+	'''
+	def query_last_by_key(self, title):
 		'''
 		输出对应关键词title 的text block
 		input:
@@ -182,16 +189,84 @@ class pattern_blocks:
 			return None
 		else:
 			return self.info_dictionary[title]
+		
 
-class Gaussianinfo(pattern_blocks):
+	def query_all_by_key(self, title):
+		'''
+		输出对应关键词title 的text block
+		input:
+		title: The keyword
+		return:
+		A list of list of text that contain the original information
+		'''
+		if title not in self.allinfo_dictionary:
+			print("Corresponding title not found")
+			return None
+		else:
+			#print(self.allinfo_dictionary[title])
+			return self.allinfo_dictionary[title]
+
+
+
+class Moleculeinfo(pattern_blocks):
 	def __init__(self, stringblock):
 		super().__init__(stringblock)
 		self.last_xyz = []
 		self.last_AtomicNum = []
 		self.last_NumAtoms = 0
+		self.all_xyz = []
+
+	def print_last_xyz(self, filename=None):
+		if filename is None:
+			print(self.last_NumAtoms, "\n")
+			for index in range(len(self.last_AtomicNum)):
+				print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
+		  self.last_xyz[3 * index], self.last_xyz[3 * index + 1], self.last_xyz[3 * index + 2]
+		  )
+		else:
+			xyzfile = open(filename, 'w')
+			if xyzfile is not None:
+				print(self.last_NumAtoms, "\n", file = xyzfile)
+				for index in range(len(self.last_AtomicNum)):
+					print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
+		  		self.last_xyz[3 * index], self.last_xyz[3 * index + 1], self.last_xyz[3 * index + 2],
+		  		file = xyzfile)
+					
+
+	def print_all_xyz(self, filename=None):
+		if filename is None:
+			#print("total number of frames: ", len(self.all_xyz))
+			for xyz in self.all_xyz:
+				print(self.last_NumAtoms, "\n")
+				for index in range(len(self.last_AtomicNum)):
+					print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
+			xyz[3 * index], xyz[3 * index + 1], xyz[3 * index + 2]
+			)
+		'''
+		else:
+			xyzfile = open(filename, 'w')
+			if xyzfile is not None:
+				print(self.last_NumAtoms, "\n", file = xyzfile)
+				for index in range(len(self.last_AtomicNum)):
+					print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
+		  		self.last_xyz[3 * index], self.last_xyz[3 * index + 1], self.last_xyz[3 * index + 2],
+		  		file = xyzfile)
+		'''		
+
+
+
+class Gaussianinfo(Moleculeinfo):
+	def __init__(self, Moleculeinfo):
+		super().__init__(Moleculeinfo)
+		'''
+		self.last_xyz = []
+		self.last_AtomicNum = []
+		self.last_NumAtoms = 0
+		self.all_xyz = []
+		'''
 
 	def get_last_info(self):
-		info = super().query_last("---------------------------------------------------------------------")
+		info = super(Moleculeinfo, self).query_last_by_key("---------------------------------------------------------------------")
 		for line in info:
 			tmp = re.sub(r'\s+', ' ', line)
 			tmp = tmp.strip().split(' ')
@@ -202,12 +277,25 @@ class Gaussianinfo(pattern_blocks):
 
 		self.last_NumAtoms = len(self.last_AtomicNum)
 
+	def get_all_info(self):
+		self.get_last_info()
+		#self.query_last_by_key("---------------------------------------------------------------------")
+		collective_info = super(Moleculeinfo, self).query_all_by_key("---------------------------------------------------------------------")
+		for info in collective_info:
+			currentxyz = []
+			currentAtomicNum = []
+			for line in info:
+				tmp = re.sub(r'\s+', ' ', line)
+				tmp = tmp.strip().split(' ')
+				currentAtomicNum.append( int(tmp[1]) )
+				currentxyz.append( float(tmp[3]) )
+				currentxyz.append( float(tmp[4]) )
+				currentxyz.append( float(tmp[5]) )
+			self.all_xyz.append(currentxyz)
+			#print(currentxyz)
+			currentAtomicNum = []
+			currentxyz = []
 
-	def print_last_xyz(self, filename=None):
-		if filename is None:
-			print(self.last_NumAtoms, "\n")
-			for index in range(len(self.last_AtomicNum)):
-				print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
-		  self.last_xyz[3 * index], self.last_xyz[3 * index + 1], self.last_xyz[3 * index + 2]
-		  )
-		#else:
+
+
+
