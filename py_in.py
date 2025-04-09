@@ -3,7 +3,11 @@ import os
 import pandas as pd
 import copy
 import re
+import yaml
 import global_constant as gc
+
+
+######################################## trivial method for controlling Multiwfn or other CompChem #############################################
 
 def find_path():
 	'''
@@ -29,6 +33,8 @@ def call_multiwfn(file_path, commands):
 	fchk.close()
 
 	return stdout, stderr
+
+
 
 
 def extract_info(stringblock, begin_keyword, stop_keyword, skip):
@@ -75,6 +81,46 @@ def custom_split(s, column_widths):
 		columns.append(s[start:end])
 		start = end
 	return columns
+
+######################################## trivial method for controlling Multiwfn or other CompChem #############################################
+
+def recursive_print_yaml_content(data, indent=0):
+	'''
+	print YAML information
+	'''
+	if isinstance(data, dict):
+		for key, value in data.items():
+			print( " " * indent + str(key) + ":")
+			recursive_print_yaml_content(value, indent + 1)
+	elif isinstance(data, list):
+		for item in data:
+			print(" " * indent + "-")
+			recursive_print_yaml_content(item, indent + 1)
+	else:
+		print(" " * indent + str(data))
+
+
+class yaml_base:
+	def __init__(self, yaml_path):
+		self.yaml_path = yaml_path
+		self.data = None
+		self.read_yaml()
+
+	def read_yaml(self):
+		with open(self.yaml_path, 'r', encoding="utf-8") as file:
+			self.data = yaml.safe_load(file)
+
+
+	def print_yaml_info(self):
+		recursive_print_yaml_content(self.data)
+
+
+	def exist_key_1st(self, key):
+		if key in self.data:
+			return True
+		else:
+			return False
+
 
 
 class pattern_blocks:
@@ -240,18 +286,19 @@ class Moleculeinfo(pattern_blocks):
 				print(self.last_NumAtoms, "\n")
 				for index in range(len(self.last_AtomicNum)):
 					print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
-			xyz[3 * index], xyz[3 * index + 1], xyz[3 * index + 2]
-			)
-		'''
+					xyz[3 * index], xyz[3 * index + 1], xyz[3 * index + 2]
+					)
+		
 		else:
 			xyzfile = open(filename, 'w')
 			if xyzfile is not None:
-				print(self.last_NumAtoms, "\n", file = xyzfile)
-				for index in range(len(self.last_AtomicNum)):
-					print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
-		  		self.last_xyz[3 * index], self.last_xyz[3 * index + 1], self.last_xyz[3 * index + 2],
-		  		file = xyzfile)
-		'''		
+				for xyz in self.all_xyz:	
+					print(self.last_NumAtoms, "\n", file = xyzfile)
+					for index in range(len(self.last_AtomicNum)):
+						print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
+						xyz[3 * index], xyz[3 * index + 1], xyz[3 * index + 2],
+						file = xyzfile)
+		
 
 
 
