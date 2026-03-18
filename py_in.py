@@ -343,6 +343,37 @@ class Gaussianinfo(Moleculeinfo):
 			currentAtomicNum = []
 			currentxyz = []
 
+	def print_frame_xyz(self, frame_number: int, filename=None):
+		'''
+		Docstring for print_frame
+		
+		:param self: Description
+		:param frame_number: the index of frame: 0-based, -1 means last frame
+		:type frame_number: int
+		:param filename: output_filename
+		'''
+		if frame_number >= len(self.all_xyz):
+			print("total number of frames: ", len(self.all_xyz), "rounding to the last frame")
+			frame_number = len(self.all_xyz) - 1
+		if filename is None:
+			#print("total number of frames: ", len(self.all_xyz))
+			xyz = self.all_xyz[frame_number]
+			print(self.last_NumAtoms, "\n")
+			for index in range(len(self.last_AtomicNum)):
+				print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
+				xyz[3 * index], xyz[3 * index + 1], xyz[3 * index + 2]
+				)
+		
+		else:
+			xyzfile = open(filename, 'w')
+			if xyzfile is not None:
+				xyz = self.all_xyz[frame_number]
+				print(self.last_NumAtoms, "\n", file = xyzfile)
+				for index in range(len(self.last_AtomicNum)):
+					print(gc.AtomicNum_to_Symbol[self.last_AtomicNum[index]],
+					xyz[3 * index], xyz[3 * index + 1], xyz[3 * index + 2],
+					file = xyzfile)
+
 
 
 
