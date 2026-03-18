@@ -1,0 +1,18 @@
+#filename:
+#  - BTsOH.log
+#  - BTsOH_2.log
+
+filename: [BTsOH_1.txt, BTsOH_2_1.txt]
+#  [BTsOH.txt, BTsOH_2.txt]
+
+kernel: Lorentz
+
+resolution: 0.01
+
+FWHM: 0.05
+
+x: 1
+y: 2
+
+
+output: True
