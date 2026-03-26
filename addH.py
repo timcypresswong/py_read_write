@@ -50,7 +50,10 @@ def run():
 
     mol = readmol(filename = file_path, fileformat = 'xyz')
     mol = addH(mol)
-    writemol(mol, filename = output, fileformat = 'xyz')
+    suffix = output.split(".")[-1]
+    basename = output.split("." + suffix)[0]
+
+    writemol(mol, filename = output, fileformat = suffix)
 
 
 def are_atoms_collinear_vectors(coords, threshold=0.1):
