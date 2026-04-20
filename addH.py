@@ -185,7 +185,7 @@ def is_aromatic_positional(mol, atomlist) -> bool:
             return True
     # print("the ring is not coplanar enough:", atomlist, are_atoms_coplanar(atom_coord, threshold=0.15)[1])
     return False
-
+'''
 def is_aromatic_electron(mol, atomlist):
     count_electron = 0
     N_idx = []                              # the index of N that can be work around
@@ -225,7 +225,158 @@ def is_aromatic_electron(mol, atomlist):
 
     # print("electron in this ring is not considered as aromatic", count_electron)
     return False, N_idx, 0, non_bond_N_num
+'''
 
+def is_aromatic_electron(mol, atomlist):
+    count_electron = 0
+    N_idx = []                              # the index of N that can be work around
+    N_full_valence_is_3 = []
+    num_double_bond = 0
+    non_bond_N_num = 0
+    for idx in atomlist:
+        Atom = mol.GetAtom(idx)
+        AtomicNum = Atom.GetAtomicNum()
+        if AtomicNum == 6:
+            if Atom.GetExplicitValence() < 4:
+                count_electron += 1
+                num_double_bond += 1
+        if AtomicNum == 8:
+            count_electron += 2
+        if AtomicNum == 16:
+            count_electron += 2
+        if AtomicNum == 7:
+            if Atom.GetExplicitValence() == 3:
+                count_electron += 2
+                N_full_valence_is_3.append(idx)
+            if Atom.GetExplicitValence() == 2:
+                count_electron += 1
+                N_idx.append(idx)
+                num_double_bond += 1
+
+    if count_electron > 15:
+        # dense ring (possibly more than 15 like 芘 reveals an anti Huckel rule, as long as they are planar enough, we consider them aromatic)
+        num_double_bond = int(num_double_bond / 2)
+        return  True, N_idx, num_double_bond, non_bond_N_num, N_full_valence_is_3
+    elif (count_electron % 4 - 2) == 0:
+        num_double_bond = int(num_double_bond / 2)
+        return  True, N_idx, num_double_bond, non_bond_N_num, N_full_valence_is_3
+    elif len(N_idx) >= np.abs(count_electron % 4 - 2 ):
+        num_double_bond = num_double_bond - np.abs(count_electron % 4 - 2 )
+        num_double_bond = int(num_double_bond / 2)
+        non_bond_N_num =   np.abs(count_electron % 4 - 2 )
+        return True, N_idx, num_double_bond, non_bond_N_num, N_full_valence_is_3
+
+    # print("electron in this ring is not considered as aromatic", count_electron)
+    return False, N_idx, 0, non_bond_N_num, N_full_valence_is_3
+
+def max_distance_sum_bruteforce(coords, M, index_when_M_only_one = 0):
+    """
+    暴力枚举所有组合，选择距离和最大的M个点
+
+    参数:
+    coords: (N, 3) numpy数组，氮原子坐标
+    M: 要选择的原子数
+
+    返回:
+    best_indices: 选择的M个原子的索引
+    max_sum: 最大距离和
+    """
+    N = len(coords)
+
+    if M > N:
+        raise ValueError(f"M({M})不能大于N({N})")
+
+    if M == 0:
+        # 如果只选0个点，距离和为0
+        return [], 0.0
+
+    if M == 1:
+        # 如果只选1个点，距离和为0
+        # print("index_when_M_only_one:", index_when_M_only_one)
+        return [index_when_M_only_one], 0.0
+
+
+    best_indices = None
+    max_sum = -float('inf')
+
+    # 遍历所有可能的组合
+    for indices in itertools.combinations(range(N), M):
+        # 获取选中的坐标
+        selected_coords = coords[list(indices)]
+
+        # 计算所有点对之间的距离
+        # 方法1：使用pdist计算所有点对距离
+        distances = pdist(selected_coords)
+
+        # 计算距离总和
+        dist_sum = np.sum(distances)
+
+        # 更新最大值
+        if dist_sum > max_sum:
+            max_sum = dist_sum
+            best_indices = indices
+
+    return list(best_indices), max_sum
+
+def max_distance_sum_bruteforce_by_references(coords, M, reference_coords, index_when_M_only_one = 0):
+    """
+    暴力枚举所有组合，选择距离和最大的M个点
+
+    参数:
+    coords: (N, 3) numpy数组，氮原子坐标
+    M: 要选择的原子数
+    reference_coords: 其他已经定了的氮原子坐标
+
+
+    返回:
+    best_indices: 选择的M个原子的索引
+    max_sum: 最大距离和
+    """
+    if reference_coords is None or reference_coords.shape[0] == 0:
+        return max_distance_sum_bruteforce(coords, M, index_when_M_only_one)
+
+    else:
+        # print("reference_coords:", reference_coords)
+        N = len(coords)
+
+        if M > N:
+            raise ValueError(f"M({M})不能大于N({N})")
+
+        if M == 0:
+            # 如果只选1个或0个点，距离和为0
+            return [], 0.0
+
+        if M == 1:
+            # 如果只选1个或0个点，距离和为0
+            return [index_when_M_only_one], 0.0
+
+
+        best_indices = None
+        max_sum = -float('inf')
+
+        # 遍历所有可能的组合
+        for indices in itertools.combinations(range(N), M):
+            # 获取选中的坐标
+            selected_coords = coords[list(indices)]
+
+            # 拼接reference point 的坐标
+            selected_coords = np.concatenate( (selected_coords, reference_coords), axis = 0 )
+
+            # 计算所有点对之间的距离
+            # 方法1：使用pdist计算所有点对距离
+            distances = pdist(selected_coords)
+
+            # 计算距离总和
+            dist_sum = np.sum(distances)
+
+            # 更新最大值
+            if dist_sum > max_sum:
+                max_sum = dist_sum
+                best_indices = indices
+
+        return list(best_indices), max_sum
+
+'''
 def max_distance_sum_bruteforce(coords, M):
     """
     暴力枚举所有组合，选择距离和最大的M个点
@@ -273,6 +424,7 @@ def max_distance_sum_bruteforce(coords, M):
             best_indices = indices
 
     return list(best_indices), max_sum
+'''
 
 def find_double_edges(edges, M):
     """
@@ -380,6 +532,27 @@ def find_double_edges(edges, M):
     backtrack(0, [])
     return result if result else None
 
+def test_N_choose(mol, num_double_bond_list, provide_2_electron_N_idx_list, CombinedRingList, ringidx):
+
+    possible_modified_bond_list = []
+    for bond in openbabel.OBMolBondIter(mol):
+        obatom1 = bond.GetBeginAtom()
+        obatom2 = bond.GetEndAtom()
+        if obatom1.GetIdx() in CombinedRingList[ringidx] and obatom2.GetIdx() in CombinedRingList[ringidx]:
+            if (obatom1.GetExplicitValence() < fullvalance[obatom1.GetAtomicNum()]) and ( obatom2.GetExplicitValence() < fullvalance[obatom2.GetAtomicNum()] ):
+                if obatom1.GetIdx() not in provide_2_electron_N_idx_list[ringidx] and obatom2.GetIdx() not in provide_2_electron_N_idx_list[ringidx]:
+                    possible_modified_bond_list.append( [obatom1.GetIdx() , obatom2.GetIdx() ] )
+    # print("atom idx in CombinedRingList:", CombinedRingList[ringidx])
+    # print("possible modified bond list:", possible_modified_bond_list)
+    # print("number of double bond to add:", num_double_bond_list[ringidx])
+    double_edges_idx = find_double_edges(possible_modified_bond_list,num_double_bond_list[ringidx] )
+    if double_edges_idx is None:
+        return False
+    else:
+        return True
+
+
+'''
 def generate_ring_information_for_aromatic_calculation(mol, atomList):
     aromatic_list = []
     aromatic_Nlist = []
@@ -415,6 +588,71 @@ def generate_ring_information_for_aromatic_calculation(mol, atomList):
             provide_2_electron_N_idx = [idx for i, idx in enumerate(aromatic_Nlist[ring_idx]) if i in to_remove_N_idx ]
             provide_2_electron_N_idx_list[ring_idx] = provide_2_electron_N_idx
     return aromatic_list, num_double_bond_list, non_bond_N_num_list, provide_2_electron_N_idx_list
+'''
+def generate_ring_information_for_aromatic_calculation(mol, atomList, test_flag= False):
+    aromatic_list = []
+    aromatic_Nlist = []
+    num_double_bond_list = []
+    non_bond_N_num_list = []
+    not_adjustable_Nlist = []
+    for ringlist in atomList:
+        if is_aromatic_positional(mol, ringlist):
+            aromatic_elec, Nlist, num_double_bond, non_bond_N_num, N_full_valence_is_3 = is_aromatic_electron(mol, ringlist)
+            aromatic_list.append(aromatic_elec)
+            aromatic_Nlist.append(Nlist)
+            num_double_bond_list.append(num_double_bond)
+            non_bond_N_num_list.append(non_bond_N_num)
+            not_adjustable_Nlist.append(N_full_valence_is_3)
+        else:
+            aromatic_list.append(False)
+            aromatic_Nlist.append([])
+            num_double_bond_list.append(0)
+            non_bond_N_num_list.append(0)
+            not_adjustable_Nlist.append([])
+    # print(aromatic_list)
+    # print("aromatic_Nlist:", aromatic_Nlist)
+    # print(num_double_bond_list)
+    # print(non_bond_N_num_list)
+
+    provide_2_electron_N_idx_list = [ [] for i in aromatic_list ]
+    for ring_idx in range(len(aromatic_list)):
+        if aromatic_list[ring_idx]:
+            N_coord = []
+            to_remove_N_idx = []
+            for idx in aromatic_Nlist[ring_idx]:
+                atom = mol.GetAtom(idx)
+                N_coord.append( [atom.GetX(), atom.GetY(), atom.GetZ() ]  )
+
+            # N_reference_coord = []
+            # for idx in not_adjustable_Nlist[ring_idx]:
+            #     atom = mol.GetAtom(idx)
+            #     N_reference_coord.append( [atom.GetX(), atom.GetY(), atom.GetZ() ]  )
+
+
+            N_coord = np.array(N_coord)
+            # N_reference_coord = np.array(N_reference_coord)
+
+
+            if test_flag == False:
+                # to_remove_N_idx = max_distance_sum_bruteforce_by_references(N_coord, non_bond_N_num_list[ring_idx], N_reference_coord )[0]
+                to_remove_N_idx = max_distance_sum_bruteforce(N_coord, non_bond_N_num_list[ring_idx])[0]
+                # print(N_coord,non_bond_N_num, to_remove_N_idx)
+                provide_2_electron_N_idx = [idx for i, idx in enumerate(aromatic_Nlist[ring_idx]) if i in to_remove_N_idx ]
+                provide_2_electron_N_idx_list[ring_idx] = provide_2_electron_N_idx
+            else:
+                for num_candidate_N in range(N_coord.shape[0]):
+                    # to_remove_N_idx = max_distance_sum_bruteforce_by_references(N_coord, non_bond_N_num_list[ring_idx], N_reference_coord, num_candidate_N )[0]
+                    to_remove_N_idx = max_distance_sum_bruteforce(N_coord, non_bond_N_num_list[ring_idx], num_candidate_N)[0]
+                    provide_2_electron_N_idx = [idx for i, idx in enumerate(aromatic_Nlist[ring_idx]) if i in to_remove_N_idx ]
+                    provide_2_electron_N_idx_list[ring_idx] = provide_2_electron_N_idx
+                    if test_N_choose(mol, num_double_bond_list, provide_2_electron_N_idx_list, atomList, ring_idx):
+                        break
+
+
+
+    return aromatic_list, num_double_bond_list, non_bond_N_num_list, provide_2_electron_N_idx_list
+
+
 
 def merge_overlapping_sets(sets):
     '''
@@ -561,7 +799,10 @@ def correct_bond_order(mol):
         CombinedRingList.append( list(atom_in_bigring)  )
 
     #print(CombinedRingList)
-    aromatic_list, num_double_bond_list, non_bond_N_num_list, provide_2_electron_N_idx_list = generate_ring_information_for_aromatic_calculation(mol, CombinedRingList)
+    # aromatic_list, num_double_bond_list, non_bond_N_num_list, provide_2_electron_N_idx_list = generate_ring_information_for_aromatic_calculation(mol, CombinedRingList)
+
+    aromatic_list, num_double_bond_list, non_bond_N_num_list, provide_2_electron_N_idx_list = generate_ring_information_for_aromatic_calculation(mol, CombinedRingList, test_flag= True)
+
 
     #print(aromatic_list)
     #print(num_double_bond_list)
