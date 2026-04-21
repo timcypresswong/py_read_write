@@ -298,10 +298,11 @@ def run():
         sep = " "
     if base is None:
         base = 0
-    selected_atom_idx = select_atoms(file_path, selection)
+    selected_atom_idx, charge = select_atoms(file_path, selection)
     selected_atom_idx = sorted(selected_atom_idx)
     selected_atom_idx_str = [ str(i + base) for i in selected_atom_idx ]
     print(sep.join(selected_atom_idx_str))
+    print("fragment charge calculated at multiplicity 1:", charge)
 
 
 def select_atoms(file_path, selection):
@@ -323,7 +324,22 @@ def select_atoms(file_path, selection):
     merged_G = Merge_two_graphs_keep_high_BO(OB_G, RD_G)
     expanded_atom_idx = expand_subgraph_nx_elemental(merged_G, selected_atom_idx, OB_complex, batch=False, priority='smallGraph')
 
-    return expanded_atom_idx
+
+    # calc charge
+    charge_list = calc_Gasteiger_Charge(RD_complex)
+    atomic_num_list = get_Atomic_Num(RD_complex)
+
+    frac_charge_list = [ float(charge_list[i]) for i in expanded_atom_idx ]
+    frac_partial_charge = sum(frac_charge_list)
+    print(frac_partial_charge)
+
+    frac_atomic_num_list = [ int(atomic_num_list[i]) for i in expanded_atom_idx ]
+    frac_atomic_num = sum(frac_atomic_num_list)
+
+
+    frac_charge = judge_charge_multiplicity(frac_atomic_num, frac_partial_charge  )
+
+    return expanded_atom_idx, frac_charge
 
 
 
