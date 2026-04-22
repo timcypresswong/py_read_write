@@ -16,7 +16,7 @@ def parser_args():
 	parser.add_argument('selection', help='specific selection command with quatation mark, i.e. \"(around 5 resname LIG) or (resname LIG)\" or \"same segid as (around 5 resname LIG)\", etc.')
 	parser.add_argument('--sep', help='define the seperation mark for output, default is space', type=str)
 	parser.add_argument('--base', help='determine whether the selected atoms indices are 0 or 1-based, default is 0-based', type=int)
-
+	parser.add_argument('--output_pdb', help='specify the outputname of the pdb', type=str)
 	args = parser.parse_args()
 	return args
 
@@ -293,19 +293,31 @@ def run():
     selection = args.selection
     sep = args.sep
     base = args.base
+    output_pdb = args.output_pdb
 
     if sep is None:
         sep = " "
     if base is None:
         base = 0
-    selected_atom_idx, charge = select_atoms(file_path, selection)
+
+    selected_atom_idx, charge = select_atoms(file_path, selection, output_pdb)
     selected_atom_idx = sorted(selected_atom_idx)
     selected_atom_idx_str = [ str(i + base) for i in selected_atom_idx ]
     print(sep.join(selected_atom_idx_str))
     print("fragment charge calculated at multiplicity 1:", charge)
 
 
-def select_atoms(file_path, selection):
+def output_RDmol(RDmol, indices,  file_name):
+    atom_indices_tuple = tuple(indices)
+    try:
+        selected_fragment = Chem.PathToSumol(RDmol, atomIndices=atom_indices_tuple)
+    except Exception as e:
+        print(f"extract fragment error")
+        return False
+    Chem.MolToPDBFile(selected_fragment, file_name)
+    return True
+
+def select_atoms(file_path, selection, output_pdb):
     RD_complex = Chem.MolFromPDBFile(file_path, removeHs = False)
     OB_complex = readmol(file_path, "pdb")
     OB_G = OBMol_to_Graph(OB_complex)
@@ -338,6 +350,8 @@ def select_atoms(file_path, selection):
 
 
     frac_charge = judge_charge_multiplicity(frac_atomic_num, frac_partial_charge  )
+    if output_pdb is not None:
+        output_RDmol(RD_complex, expanded_atom_idx, output_pdb)
 
     return expanded_atom_idx, frac_charge
 
