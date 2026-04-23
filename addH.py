@@ -917,11 +917,11 @@ def correct_bond_order(mol):
                 atom_coords = np.array(atom_coords)
                 if atom_coords.shape == (5, 3):
                     if are_atoms_coplanar(atom_coords, threshold= 0.15)[0]:
-                        if bond.IsInRing():
-                            continue
-                            # bond.SetBondOrder(2)
-                            # CCdoublebond_added.append(  [obatom1.GetIdx(), obatom2.GetIdx() ]  )
-                        elif bond.GetLength() < 1.35:
+                        # if bond.IsInRing():
+                        #     continue
+                        #     # bond.SetBondOrder(2)
+                        #     # CCdoublebond_added.append(  [obatom1.GetIdx(), obatom2.GetIdx() ]  )
+                        if bond.GetLength() < 1.38:
                             bond.SetBondOrder(2)
                             CCdoublebond_added.append(  [obatom1.GetIdx(), obatom2.GetIdx() ]  )
 
@@ -939,11 +939,11 @@ def correct_bond_order(mol):
                 atom_coords = np.array(atom_coords)
                 if atom_coords.shape == (4, 3):
                     if are_atoms_coplanar(atom_coords, threshold= 0.15)[0]:
-                        if bond.IsInRing():
-                            continue
-                            # bond.SetBondOrder(2)
-                            # CCdoublebond_added.append(  [obatom1.GetIdx(), obatom2.GetIdx() ]  )
-                        elif bond.GetLength() < 1.35:
+                        # if bond.IsInRing():
+                        #     continue
+                        #     # bond.SetBondOrder(2)
+                        #     # CCdoublebond_added.append(  [obatom1.GetIdx(), obatom2.GetIdx() ]  )
+                        if bond.GetLength() < 1.38:
                             bond.SetBondOrder(2)
                             CCdoublebond_added.append(  [obatom1.GetIdx(), obatom2.GetIdx() ]  )
 

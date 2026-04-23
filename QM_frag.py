@@ -453,7 +453,7 @@ def output_RDmol(RDmol, atom_indices,  file_name):
 
 
 
-def openmm_forcefield_struct_correction(file_path, selected_atom_idx):
+def openmm_forcefield_struct_correction(file_path, selected_atom_idx): # this didn't help at all.
     forcefield = ForceField('amber14-all.xml', 'implicit/obc2.xml')
     openmm_mol = PDBFile(file_path)
     modeller = Modeller(openmm_mol.topology, openmm_mol.positions)

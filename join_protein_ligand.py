@@ -45,8 +45,20 @@ def join_protein_ligand(protein_path, ligand_path, complex_path):
 
     complex_model = Modeller(protein.topology, protein.positions)
     complex_model.add(ligand_top, ligand_pos)
+
+    # check accidental bond
+    # protein_atoms = list( protein.topology.atoms() )
+    # num_atom_protein = len(protein_atoms)
+    # for bond in complex_model.topology.bonds():
+    #     idx1 = bond[0].index
+    #     idx2 = bond[1].index
+    #     if (idx1 < num_atom_protein and idx2 >= num_atom_protein) or (idx2 < num_atom_protein and idx1 >= num_atom_protein):
+    #         print("found accidental bond!", idx1, idx2)
+
     with open(complex_path, 'w') as f:
         PDBFile.writeFile(complex_model.topology, complex_model.positions, f)
+
+
 
 def run():
     args = parser_args()
