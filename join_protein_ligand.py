@@ -30,17 +30,17 @@ def join_protein_ligand(protein_path, ligand_path, complex_path):
 
     ligand_pos = [  openmm_unit.Quantity(Vec3( x,y,z ), openmm_unit.angstrom) for x,y,z in ligand_RDpos.magnitude  ]
 
-    print(type(protein.positions))
-    print(type(protein.positions[0]))
-    print(type(ligand_RDpos))
-    print(type(ligand_RDpos[0]))
-    print(type(ligand_pos))
+    # print(type(protein.positions))
+    # print(type(protein.positions[0]))
+    # print(type(ligand_RDpos))
+    # print(type(ligand_RDpos[0]))
+    # print(type(ligand_pos))
 
-    print(ligand_RDpos.magnitude)
-    print(ligand_RDpos.units)
+    # print(ligand_RDpos.magnitude)
+    # print(ligand_RDpos.units)
 
-    print(protein.positions[0])
-    print(ligand_pos[0])
+    # print(protein.positions[0])
+    # print(ligand_pos[0])
 
 
     complex_model = Modeller(protein.topology, protein.positions)
