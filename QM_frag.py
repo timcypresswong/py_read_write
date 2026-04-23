@@ -303,16 +303,24 @@ def run():
     selected_atom_idx, charge = select_atoms(file_path, selection, output_pdb)
     selected_atom_idx = sorted(selected_atom_idx)
     selected_atom_idx_str = [ str(i + base) for i in selected_atom_idx ]
-    print(sep.join(selected_atom_idx_str))
-    print("fragment charge calculated at multiplicity 1:", charge)
+    if output_pdb is None:
+        print(sep.join(selected_atom_idx_str))
+        print("fragment charge calculated at multiplicity 1:", charge)
 
 
-def output_RDmol(RDmol, indices,  file_name):
-    atom_indices_tuple = tuple(indices)
+def output_RDmol(RDmol, atom_indices,  file_name):
+    # atom_indices_tuple = tuple(atom_indices)
+    bond_list = []
+    for bond in RDmol.GetBonds():
+        begin_atom_idx = bond.GetBeginAtom().GetIdx()
+        end_atom_idx = bond.GetEndAtom().GetIdx()
+        if begin_atom_idx in atom_indices and end_atom_idx in atom_indices:
+            bond_list.append( bond.GetIdx() )
+
     try:
-        selected_fragment = Chem.PathToSumol(RDmol, atomIndices=atom_indices_tuple)
+        selected_fragment = Chem.PathToSubmol(RDmol, bond_list)
     except Exception as e:
-        print(f"extract fragment error")
+        print(f"extract fragment error, {e}")
         return False
     Chem.MolToPDBFile(selected_fragment, file_name)
     return True
@@ -343,7 +351,7 @@ def select_atoms(file_path, selection, output_pdb):
 
     frac_charge_list = [ float(charge_list[i]) for i in expanded_atom_idx ]
     frac_partial_charge = sum(frac_charge_list)
-    print(frac_partial_charge)
+    # print(frac_partial_charge)
 
     frac_atomic_num_list = [ int(atomic_num_list[i]) for i in expanded_atom_idx ]
     frac_atomic_num = sum(frac_atomic_num_list)
