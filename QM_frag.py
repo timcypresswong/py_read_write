@@ -92,6 +92,10 @@ def RDMol_to_Graph(RD_mol):
         bond_order = int(bond.GetBondTypeAsDouble())
         edges.append( tuple([begin_atom_idx, end_atom_idx, bond_order]) )
     G.add_weighted_edges_from(edges)
+
+    for atom in RD_mol.GetAtoms():
+        if atom.GetTotalValence() == 0:
+            G.add_node(atom.GetIdx())
     return G
 
 def OBMol_to_Graph(OB_mol):
@@ -106,6 +110,12 @@ def OBMol_to_Graph(OB_mol):
         edges.append( tuple([begin_atom_idx - 1, end_atom_idx - 1, bond_order]) )
 
     G.add_weighted_edges_from(edges)
+
+
+    for atom in openbabel.OBMolAtomIter(OB_mol):
+        if atom.GetExplicitValence() == 0:
+            G.add_node(atom.GetIdx() - 1)
+
     return G
 
 def get_weight(G, edge, weight_key = 'weight', directed = False, missing_value = 0):
@@ -311,6 +321,13 @@ def expand_subgraph_nx_elemental_rd(graph, initial_nodes, rdmol , max_external_d
     """
     # 使用集合方便快速成员判断
     subgraph = set(initial_nodes)
+    
+    # nodelist = []
+    # for node in graph.nodes:
+    #     nodelist.append(node)
+
+    # print(subgraph)
+    # print(nodelist)
 
     # 辅助函数：计算当前子图中每个节点的外部度数
     def compute_external_degree():
