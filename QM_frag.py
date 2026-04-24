@@ -94,7 +94,7 @@ def RDMol_to_Graph(RD_mol):
     G.add_weighted_edges_from(edges)
 
     for atom in RD_mol.GetAtoms():
-        if atom.GetTotalValence() == 0:
+        if atom.GetTotalValence() == 0 or atom.GetDegree() == 0:
             G.add_node(atom.GetIdx())
     return G
 
@@ -113,7 +113,7 @@ def OBMol_to_Graph(OB_mol):
 
 
     for atom in openbabel.OBMolAtomIter(OB_mol):
-        if atom.GetExplicitValence() == 0:
+        if atom.GetExplicitValence() == 0 or atom.GetExplicitDegree() == 0:
             G.add_node(atom.GetIdx() - 1)
 
     return G
