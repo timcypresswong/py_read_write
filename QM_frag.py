@@ -75,6 +75,7 @@ def Merge_two_graphs_keep_high_BO(G1, G2):
     edges = []
     all_edges, w1, w2 = aligned_edge_weights(G1, G2)
     for e, d1, d2 in zip( all_edges, w1, w2 ):
+
         d = max(d1, d2)
         edges.append(  tuple( [e[0], e[1], d]  )  )
     G.add_weighted_edges_from(edges)
@@ -107,7 +108,7 @@ def OBMol_to_Graph(OB_mol):
     G.add_weighted_edges_from(edges)
     return G
 
-def get_weight(G, edge, weight_key = 'weight', directed = False, missing_value = None):
+def get_weight(G, edge, weight_key = 'weight', directed = False, missing_value = 0):
     if directed:
         u, v = edge
     else:
@@ -117,7 +118,7 @@ def get_weight(G, edge, weight_key = 'weight', directed = False, missing_value =
     data = G.get_edge_data(u, v, default={})
     return data.get(weight_key, missing_value) if data else missing_value
 
-def aligned_edge_weights(G1, G2, weight_key='weight', directed=False, missing_value=None):
+def aligned_edge_weights(G1, G2, weight_key='weight', directed=False):
     """
     返回两个图在边并集上的权重列表（顺序一致）
     """
