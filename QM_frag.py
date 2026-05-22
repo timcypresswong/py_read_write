@@ -14,14 +14,16 @@ from openmm import unit as openmm_unit
 import openmm
 from openmm import Vec3
 from openff.toolkit import Molecule as OFFMolecule
+# from openmmforcefields.generators import GAFFTemplateGenerator
 
 def parser_args():
 	parser = argparse.ArgumentParser(description='This is the select the molecular fragment based on selection method, this will complement the selected fragments to the C-C bond')
 	parser.add_argument('filename', help='input pdb name')
-	parser.add_argument('selection', help='specific selection command with quatation mark, i.e. \"(around 5 resname LIG) or (resname LIG)\" or \"same segid as (around 5 resname LIG)\", etc.')
+	parser.add_argument('selection', help='specific selection command with quatation mark, i.e. \"(around 5 resname LIG) or (resname LIG)\" or \"same segid as (around 5 resname UNK)\", etc.')
 	parser.add_argument('--sep', help='define the seperation mark for output, default is space', type=str)
 	parser.add_argument('--base', help='determine whether the selected atoms indices are 0 or 1-based, default is 0-based', type=int)
 	parser.add_argument('--output_pdb', help='specify the outputname of the pdb', type=str)
+	parser.add_argument('--additional_ff', help='specify the additional forcefield name', type=str)
 	args = parser.parse_args()
 	return args
 
@@ -438,13 +440,14 @@ def run():
     sep = args.sep
     base = args.base
     output_pdb = args.output_pdb
+    additional_ff = args.additional_ff
 
     if sep is None:
         sep = " "
     if base is None:
         base = 0
 
-    selected_atom_idx, charge = select_atoms(file_path, selection, output_pdb)
+    selected_atom_idx, charge = select_atoms(file_path, selection, output_pdb, additional_ff)
     selected_atom_idx = sorted(selected_atom_idx)
     selected_atom_idx_str = [ str(i + base) for i in selected_atom_idx ]
     if output_pdb is None:
@@ -471,15 +474,19 @@ def output_RDmol(RDmol, atom_indices,  file_name):
 
 
 
-def openmm_forcefield_struct_correction(file_path, selected_atom_idx): # this didn't help at all.
+def openmm_forcefield_struct_correction(file_path, selected_atom_idx, additional_ff): # this didn't help at all. If one trigger the optimization function, the entire code will probably fail
     forcefield = ForceField('amber14-all.xml', 'implicit/obc2.xml')
+    if additional_ff is not None:
+        # forcefield = ForceField('amber14-all.xml', 'implicit/obc2.xml', additional_ff)
+        forcefield = ForceField('amber14-all.xml', additional_ff)
+
     openmm_mol = PDBFile(file_path)
     modeller = Modeller(openmm_mol.topology, openmm_mol.positions)
     # modeller.addHydrogens(forcefield)
     modeller.addHydrogens()
 
     restraint_force = CustomExternalForce("k * ( (x-x0)^2 + (y-y0)^2 + (z-z0)^2 )")
-    restraint_force.addGlobalParameter("k", 1e7)
+    restraint_force.addGlobalParameter("k", 10)
     restraint_force.addPerParticleParameter("x0")
     restraint_force.addPerParticleParameter("y0")
     restraint_force.addPerParticleParameter("z0")
@@ -489,7 +496,7 @@ def openmm_forcefield_struct_correction(file_path, selected_atom_idx): # this di
             restraint_force.addParticle( atom.index, [pos.x, pos.y, pos.z])
 
 
-    system = forcefield.createSystem(modeller.topology, nonbondedMethod="PME")
+    system = forcefield.createSystem(modeller.topology)
     system.addForce(restraint_force)
 
     integrator = LangevinIntegrator(300*openmm_unit.kelvin, 1 / openmm_unit.picosecond, 0.002 * openmm_unit.picoseconds)
@@ -501,7 +508,7 @@ def openmm_forcefield_struct_correction(file_path, selected_atom_idx): # this di
         PDBFile.writeFile(simulation.topology, simulation.context.getState(getPositions=True).getPositions(), f)
 
 
-def select_atoms(file_path, selection, output_pdb):
+def select_atoms(file_path, selection, output_pdb, additional_ff = None):
 
     MDA_complex = mda.Universe(file_path)
     print("start selection", flush = True)
@@ -518,7 +525,7 @@ def select_atoms(file_path, selection, output_pdb):
     print("RDKit reading", flush = True)
     RD_complex = Chem.MolFromPDBFile(file_path, removeHs = False, sanitize = True)
     if RD_complex is None:
-        openmm_forcefield_struct_correction(file_path, selected_atom_idx)
+        openmm_forcefield_struct_correction(file_path, selected_atom_idx, additional_ff)
 
     print("RDKit read", flush = True)
     OB_complex = None

@@ -3,12 +3,14 @@ import argparse
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdEHTTools
-from openmm.app import PDBFile, ForceField, Simulation, Modeller
+from openmm.app import PDBFile, Simulation, Modeller
+from openff.toolkit import ForceField, Topology, Molecule
 from openmm import CustomExternalForce, Platform, VerletIntegrator, LangevinIntegrator
 from openmm import unit as openmm_unit
 import openmm
 from openmm import Vec3
 from openff.toolkit import Molecule as OFFMolecule
+import pickle
 
 
 def parser_args():
@@ -55,8 +57,44 @@ def join_protein_ligand(protein_path, ligand_path, complex_path):
     #     if (idx1 < num_atom_protein and idx2 >= num_atom_protein) or (idx2 < num_atom_protein and idx1 >= num_atom_protein):
     #         print("found accidental bond!", idx1, idx2)
 
+    # force_field = ForceField("openff-2.0.0.offxml", 'ff14sb_off_impropers_0.0.2.offxml', 'ff14sb_0.0.2.offxml', 'GBSA_OBC2-1.0.offxml')
+    force_field = ForceField("openff-2.2.0.offxml", 'ff14sb_off_impropers_0.0.4.offxml')
+
+    OFF_Protein_top = Topology.from_pdb(protein_path)
+    OFF_ligand = Molecule.from_file(ligand_path)
+    new_top_mols = []
+    for molecule in OFF_Protein_top.molecules:
+        new_top_mols.append(molecule)
+    new_top_mols.append(OFF_ligand)
+    OFF_Complex_top = Topology.from_molecules(new_top_mols)
+
+    interchange = force_field.create_interchange( topology = OFF_Complex_top)
+
+    base_name = complex_path.rsplit('.', maxsplit = 1)[0]
+    # with open(base_name + "interchange.pkl", 'wb') as f:
+    #     pickle.dump(interchange, f)
+
     with open(complex_path, 'w') as f:
         PDBFile.writeFile(complex_model.topology, complex_model.positions, f)
+
+
+    with open(base_name + ".offxml", "w") as f:
+        f.write(force_field.to_string())
+
+    integrator = openmm.LangevinIntegrator(
+    300 * openmm_unit.kelvin,
+    1 / openmm_unit.picosecond,
+    0.002 * openmm_unit.picoseconds,
+    )
+    platform = Platform.getPlatformByName("CPU")
+    simulation = interchange.to_openmm_simulation(integrator=integrator, platform = platform)
+    simulation.context.setPositions(complex_model.positions)
+    simulation.minimizeEnergy(maxIterations = 10000)
+    # better minimze
+    minimized_positions = simulation.context.getState(getPositions = True).getPositions()
+
+    with open(base_name + "off.pdb", 'w') as f:
+        PDBFile.writeFile(simulation.topology, minimized_positions, f)
 
 
 

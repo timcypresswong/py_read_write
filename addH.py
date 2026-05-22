@@ -803,6 +803,7 @@ def correct_bond_order(mol):
 
     aromatic_list, num_double_bond_list, non_bond_N_num_list, provide_2_electron_N_idx_list = generate_ring_information_for_aromatic_calculation(mol, CombinedRingList, test_flag= True)
 
+    aromatic_atom_list = []
 
     #print(aromatic_list)
     #print(num_double_bond_list)
@@ -828,13 +829,15 @@ def correct_bond_order(mol):
             # print("double edges:", double_edges)
             for pair in double_edges:
                 mol.GetBond(pair[0], pair[1]).SetBondOrder(2)
+                aromatic_atom_list.append(pair[0])
+                aromatic_atom_list.append(pair[1])
 
 
     # SP2-SP2 C=C-Heter
     for bond in openbabel.OBMolBondIter(mol):
         obatom1 = bond.GetBeginAtom()
         obatom2 = bond.GetEndAtom()
-        if obatom1.GetAtomicNum() == 6 and obatom2.GetAtomicNum() == 6:
+        if (obatom1.GetAtomicNum() == 6 and obatom2.GetAtomicNum() == 6) :
             atom_coords = []
             atom_Atomic_nums = []
             if obatom1.GetExplicitValence() == 3 and obatom2.GetExplicitValence() == 3:
@@ -907,7 +910,7 @@ def correct_bond_order(mol):
     for bond in openbabel.OBMolBondIter(mol):
         obatom1 = bond.GetBeginAtom()
         obatom2 = bond.GetEndAtom()
-        if obatom1.GetAtomicNum() == 6 and obatom2.GetAtomicNum() == 6:
+        if (obatom1.GetAtomicNum() == 6 and obatom2.GetAtomicNum() == 6) and (obatom1.GetIdx() not in aromatic_atom_list and  obatom2.GetIdx() not in aromatic_atom_list):
             atom_coords = []
             if obatom1.GetExplicitValence() == 3 or obatom2.GetExplicitValence() == 3:
                 for neighbouratom  in openbabel.OBAtomAtomIter(obatom1):
@@ -929,7 +932,7 @@ def correct_bond_order(mol):
     for bond in openbabel.OBMolBondIter(mol):
         obatom1 = bond.GetBeginAtom()
         obatom2 = bond.GetEndAtom()
-        if obatom1.GetAtomicNum() == 6 and obatom2.GetAtomicNum() == 6:
+        if (obatom1.GetAtomicNum() == 6 and obatom2.GetAtomicNum() == 6) and (obatom1.GetIdx() not in aromatic_atom_list and  obatom2.GetIdx() not in aromatic_atom_list):
             atom_coords = []
             if obatom1.GetExplicitValence() == 2 or obatom2.GetExplicitValence() == 2:
                 for neighbouratom  in openbabel.OBAtomAtomIter(obatom1):
