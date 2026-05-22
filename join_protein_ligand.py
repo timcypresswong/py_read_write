@@ -78,8 +78,8 @@ def join_protein_ligand(protein_path, ligand_path, complex_path):
         PDBFile.writeFile(complex_model.topology, complex_model.positions, f)
 
 
-    with open(base_name + ".offxml", "w") as f:
-        f.write(force_field.to_string())
+    # with open(base_name + ".offxml", "w") as f:
+    #     f.write(force_field.to_string())
 
     integrator = openmm.LangevinIntegrator(
     300 * openmm_unit.kelvin,
