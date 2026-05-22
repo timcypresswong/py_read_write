@@ -86,7 +86,10 @@ def join_protein_ligand(protein_path, ligand_path, complex_path):
     1 / openmm_unit.picosecond,
     0.002 * openmm_unit.picoseconds,
     )
-    platform = Platform.getPlatformByName("CPU")
+    try:
+        platform = Platform.getPlatformByName("CUDA")
+    except:
+        platform = Platform.getPlatformByName("CPU")
     simulation = interchange.to_openmm_simulation(integrator=integrator, platform = platform)
     simulation.context.setPositions(complex_model.positions)
     simulation.minimizeEnergy(maxIterations = 10000)
